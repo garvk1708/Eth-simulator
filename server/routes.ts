@@ -50,20 +50,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Prevent broadcasting too frequently with this variable
+  let lastBroadcast = 0;
+  const BROADCAST_THROTTLE = 5000; // 5 seconds minimum between broadcasts
+  
   // Broadcast market data updates to all connected clients
   const broadcastMarketData = () => {
-    storage.getAllMarketData().then(marketData => {
-      const message = JSON.stringify({ 
-        type: "MARKET_DATA", 
-        data: marketData 
+    const now = Date.now();
+    
+    // Only broadcast if enough time has passed since the last broadcast
+    if (now - lastBroadcast > BROADCAST_THROTTLE) {
+      storage.getAllMarketData().then(marketData => {
+        const message = JSON.stringify({ 
+          type: "MARKET_DATA", 
+          data: marketData 
+        });
+        
+        let clientCount = 0;
+        wss.clients.forEach(client => {
+          if (client.readyState === client.OPEN) {
+            client.send(message);
+            clientCount++;
+          }
+        });
+        
+        console.log(`Broadcasting market data to ${clientCount} connected clients`);
+        lastBroadcast = now;
       });
-      
-      wss.clients.forEach(client => {
-        if (client.readyState === client.OPEN) {
-          client.send(message);
-        }
-      });
-    });
+    } else {
+      console.log(`Skipping broadcast, too soon since last update (${now - lastBroadcast}ms < ${BROADCAST_THROTTLE}ms)`);
+    }
   };
   
   // API Routes

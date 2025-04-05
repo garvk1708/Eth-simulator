@@ -64,13 +64,25 @@ function App() {
           retryCount = 0; // Reset retry counter on successful connection
         };
         
+        // Create a debounced handler for market data updates to prevent flickering
+        let lastMessageTimestamp = 0;
+        const DEBOUNCE_INTERVAL = 2000; // 2 seconds
+        
         socket.onmessage = (event) => {
           try {
+            const now = Date.now();
             const message = JSON.parse(event.data);
             console.log('Received WebSocket message:', message.type);
+            
+            // Only process market data messages if enough time has passed since the last update
             if (message.type === 'MARKET_DATA') {
-              // Update market data in the query cache
-              queryClient.setQueryData(['market-data'], message.data);
+              if (now - lastMessageTimestamp > DEBOUNCE_INTERVAL) {
+                // Update market data in the query cache
+                queryClient.setQueryData(['market-data'], message.data);
+                lastMessageTimestamp = now;
+              } else {
+                console.log('Debouncing market data update to prevent UI flickering');
+              }
             }
           } catch (error) {
             console.error('Error processing WebSocket message:', error);

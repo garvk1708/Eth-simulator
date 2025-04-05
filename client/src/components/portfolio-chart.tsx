@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -20,22 +20,46 @@ interface PortfolioChartProps {
   isLoading?: boolean;
 }
 
+// Define types for chart data
+interface ChartDataPoint {
+  date: string;
+  value: string;
+}
+
+type TimeRangeType = '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL';
+
+// Create a stable seed for random number generation
+const generateStableSeed = (index: number, date: Date, range: string): number => {
+  const dateStr = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  const seed = (dateStr + range + index.toString()).split('').reduce((acc, char) => {
+    return acc + char.charCodeAt(0);
+  }, 0);
+  return seed / 1000;
+};
+
+// Generate a deterministic random number
+const deterministicRandom = (seed: number): number => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
+
 export default function PortfolioChart({ positions, isLoading = false }: PortfolioChartProps) {
-  const [timeRange, setTimeRange] = useState<'1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('1M');
+  const [timeRange, setTimeRange] = useState<TimeRangeType>('1M');
   
-  // Generate mock historical data for demonstration
-  // In a real app, this would come from an API
-  const generateChartData = () => {
-    // Calculate total portfolio value from positions
-    const totalValue = positions?.reduce((sum, position) => 
-      sum + parseFloat(position.value.toString()), 0) || 0;
-      
-    const data = [];
+  // Memoize the total value calculation to prevent unnecessary recalculations
+  const totalValue = useMemo(() => {
+    return positions?.reduce((sum, position) => 
+      sum + parseFloat(position.value?.toString() || '0'), 0) || 0;
+  }, [positions]);
+  
+  // Create a memoized function for generating chart data
+  const generateChartData = useCallback((): ChartDataPoint[] => {
+    const data: ChartDataPoint[] = [];
     const today = new Date();
     let currentValue = totalValue;
     
     // Number of data points based on timeRange
-    let days;
+    let days: number;
     switch (timeRange) {
       case '1D': days = 24; break; // 24 hours
       case '1W': days = 7; break;
@@ -56,10 +80,9 @@ export default function PortfolioChart({ positions, isLoading = false }: Portfol
         // Format as HH:mm
         const label = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Generate realistic price fluctuations
-        // More volatility for shorter timeframes
-        const volatilityFactor = 0.003; // 0.3% per hour
-        const randomChange = (Math.random() - 0.5) * 2 * volatilityFactor;
+        // Generate deterministic price fluctuations
+        const seed = generateStableSeed(i, today, timeRange);
+        const randomChange = (deterministicRandom(seed) - 0.5) * 2 * 0.003; // 0.3% per hour
         currentValue = currentValue * (1 + randomChange);
         
         data.push({
@@ -73,7 +96,7 @@ export default function PortfolioChart({ positions, isLoading = false }: Portfol
         const label = date.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
         
         // Adjust volatility based on timeRange
-        let volatilityFactor;
+        let volatilityFactor: number;
         switch (timeRange) {
           case '1W': volatilityFactor = 0.01; break; // 1% per day
           case '1M': volatilityFactor = 0.008; break; // 0.8% per day
@@ -83,9 +106,10 @@ export default function PortfolioChart({ positions, isLoading = false }: Portfol
           default: volatilityFactor = 0.01;
         }
         
-        // Add some trend
+        // Add some trend with deterministic randomness
+        const seed = generateStableSeed(i, today, timeRange);
         const trend = Math.sin(i / 30) * 0.002; // Cyclical trend
-        const randomChange = (Math.random() - 0.48) * 2 * volatilityFactor + trend;
+        const randomChange = (deterministicRandom(seed) - 0.48) * 2 * volatilityFactor + trend;
         currentValue = currentValue * (1 + randomChange);
         
         data.push({
@@ -96,9 +120,10 @@ export default function PortfolioChart({ positions, isLoading = false }: Portfol
     }
     
     return data;
-  };
+  }, [timeRange, totalValue]);
 
-  const chartData = generateChartData();
+  // Memoize the chart data to prevent regenerating on every render
+  const chartData = useMemo(() => generateChartData(), [generateChartData]);
 
   return (
     <Card className="bg-card border-secondary overflow-hidden lg:col-span-2">
