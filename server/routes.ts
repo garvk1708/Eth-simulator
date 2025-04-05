@@ -15,20 +15,38 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
-  // Setup WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer });
+  // Setup WebSocket server on a separate path to avoid conflicts with Vite's WebSocket
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: "/api/ws", // Specific path for our WebSocket to avoid conflicts with Vite
+    perMessageDeflate: false,
+    clientTracking: true,
+  });
+  
+  console.log("WebSocket server initialized on path /api/ws");
   
   wss.on("connection", (ws) => {
+    console.log("Market data WebSocket client connected");
+    
     ws.on("message", (message) => {
-      console.log("Received message:", message.toString());
+      console.log("Received WebSocket message:", message.toString());
+    });
+    
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
     });
     
     // Send initial market data on connection
     storage.getAllMarketData().then(marketData => {
-      ws.send(JSON.stringify({ 
-        type: "MARKET_DATA", 
-        data: marketData 
-      }));
+      try {
+        console.log("Sending initial market data to WebSocket client");
+        ws.send(JSON.stringify({ 
+          type: "MARKET_DATA", 
+          data: marketData 
+        }));
+      } catch (error) {
+        console.error("Error sending market data over WebSocket:", error);
+      }
     });
   });
   
@@ -368,10 +386,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Update ETH price with small random fluctuations
       const eth = await storage.getMarketDataByAsset("Ethereum");
-      if (eth) {
-        const currentPrice = parseFloat(eth.price.toString());
+      if (eth && eth.price !== null && eth.change24h !== null) {
+        const currentPrice = parseFloat(String(eth.price));
         const newPrice = currentPrice * (1 + (Math.random() * 0.01 - 0.005)); // ±0.5% change
-        const newChange = parseFloat(eth.change24h.toString()) + (Math.random() * 0.2 - 0.1); // ±0.1% change
+        const currentChange = parseFloat(String(eth.change24h));
+        const newChange = currentChange + (Math.random() * 0.2 - 0.1); // ±0.1% change
         
         await storage.updateMarketData("Ethereum", {
           price: newPrice.toFixed(2),
@@ -381,10 +400,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update LINK price with small random fluctuations
       const link = await storage.getMarketDataByAsset("Chainlink");
-      if (link) {
-        const currentPrice = parseFloat(link.price.toString());
+      if (link && link.price !== null && link.change24h !== null) {
+        const currentPrice = parseFloat(String(link.price));
         const newPrice = currentPrice * (1 + (Math.random() * 0.01 - 0.005)); // ±0.5% change
-        const newChange = parseFloat(link.change24h.toString()) + (Math.random() * 0.2 - 0.1); // ±0.1% change
+        const currentChange = parseFloat(String(link.change24h));
+        const newChange = currentChange + (Math.random() * 0.2 - 0.1); // ±0.1% change
         
         await storage.updateMarketData("Chainlink", {
           price: newPrice.toFixed(2),

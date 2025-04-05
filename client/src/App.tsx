@@ -35,41 +35,78 @@ function App() {
   const [marketSocket, setMarketSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    // Create WebSocket connection
-    // In Replit, we should use the default host without specifying port
+    // Create WebSocket connection on the specific path to match the server
+    // Use location hostname and don't specify a port - let Replit handle it
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${protocol}//${window.location.host}`);
-    console.log(`Connecting to WebSocket at ${protocol}//${window.location.host}`);
-
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
-    };
-
-    socket.onmessage = (event) => {
+    const host = window.location.host;
+    const socketUrl = `${protocol}//${host}/api/ws`; // Match the path we set on the server
+    
+    console.log(`Attempting to connect WebSocket at ${socketUrl}`);
+    
+    // Create socket with connection retry logic
+    let socket: WebSocket | null = null;
+    let retryCount = 0;
+    const maxRetries = 5;
+    const retryDelay = 2000; // 2 seconds
+    
+    const connectWebSocket = () => {
+      if (retryCount >= maxRetries) {
+        console.log(`Maximum retry attempts (${maxRetries}) reached, giving up`);
+        return;
+      }
+      
       try {
-        const message = JSON.parse(event.data);
-        if (message.type === 'MARKET_DATA') {
-          // Update market data in the query cache
-          queryClient.setQueryData(['market-data'], message.data);
-        }
+        console.log(`Attempt ${retryCount + 1} to connect to WebSocket at ${socketUrl}`);
+        socket = new WebSocket(socketUrl);
+        
+        socket.onopen = () => {
+          console.log('WebSocket connection established successfully');
+          retryCount = 0; // Reset retry counter on successful connection
+        };
+        
+        socket.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            console.log('Received WebSocket message:', message.type);
+            if (message.type === 'MARKET_DATA') {
+              // Update market data in the query cache
+              queryClient.setQueryData(['market-data'], message.data);
+            }
+          } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+          }
+        };
+        
+        socket.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+        
+        socket.onclose = (event) => {
+          console.log(`WebSocket connection closed: ${event.reason} (${event.code})`);
+          
+          // If connection closed abnormally, try to reconnect
+          if (event.code !== 1000) {
+            retryCount++;
+            console.log(`Attempting to reconnect WebSocket (${retryCount}/${maxRetries})...`);
+            setTimeout(connectWebSocket, retryDelay);
+          }
+        };
+        
+        setMarketSocket(socket);
       } catch (error) {
-        console.error('Error processing WebSocket message:', error);
+        console.error('Error creating WebSocket connection:', error);
+        retryCount++;
+        setTimeout(connectWebSocket, retryDelay);
       }
     };
-
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
-
-    setMarketSocket(socket);
-
+    
+    connectWebSocket();
+    
     // Clean up on unmount
     return () => {
-      socket.close();
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close(1000, "Component unmounting");
+      }
     };
   }, []);
 
