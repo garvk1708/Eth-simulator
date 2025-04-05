@@ -169,6 +169,44 @@ export default function SimulationCard({
               </div>
             </div>
             
+            {/* Additional simulation factors */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+              {simulation.yieldValue !== undefined && (
+                <div className="p-2 bg-secondary/20 rounded-md">
+                  <div className="text-xs text-muted-foreground">Annual Yield</div>
+                  <div className="font-medium">{simulation.yieldValue}%</div>
+                </div>
+              )}
+              
+              {simulation.gasFees !== undefined && (
+                <div className="p-2 bg-secondary/20 rounded-md">
+                  <div className="text-xs text-muted-foreground">Gas Fees</div>
+                  <div className="font-medium">${simulation.gasFees}</div>
+                </div>
+              )}
+              
+              {simulation.impermanentLoss !== undefined && (
+                <div className="p-2 bg-secondary/20 rounded-md">
+                  <div className="text-xs text-muted-foreground">Imp. Loss Risk</div>
+                  <div className="font-medium">{simulation.impermanentLoss}%</div>
+                </div>
+              )}
+              
+              {simulation.liquidityImpact !== undefined && (
+                <div className="p-2 bg-secondary/20 rounded-md">
+                  <div className="text-xs text-muted-foreground">Liquidity Impact</div>
+                  <div className="font-medium">{simulation.liquidityImpact}</div>
+                </div>
+              )}
+              
+              {simulation.breakEvenPoint !== undefined && (
+                <div className="p-2 bg-secondary/20 rounded-md">
+                  <div className="text-xs text-muted-foreground">Break-even Point</div>
+                  <div className="font-medium">${simulation.breakEvenPoint}</div>
+                </div>
+              )}
+            </div>
+            
             <div className="p-3 bg-primary/10 border border-primary/30 rounded-md">
               <div className="flex space-x-2">
                 <Info size={20} className="text-primary" />

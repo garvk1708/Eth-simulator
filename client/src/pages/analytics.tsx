@@ -48,11 +48,11 @@ export default function Analytics() {
     enabled: true
   });
 
-  // Generate performance data for demonstration
+  // Generate stable performance data for demonstration
   const generatePerformanceData = () => {
     const data = [];
     const today = new Date();
-    let totalValue = 50000; // Starting value
+    let totalValue = 10000; // Starting value
     
     // Generate data points depending on the time range
     let days;
@@ -65,34 +65,34 @@ export default function Analytics() {
       default: days = 30;
     }
     
-    // Market cycles and trends
-    const trendCycle = Math.PI * 2 / days; // Complete cycle over the period
-    const volatility = timeRange === '1W' ? 0.015 : 0.008; // Higher volatility for shorter timeframes
+    // Deterministic growth pattern using a stable seed value
+    const dailyGrowthRate = 0.0012; // Approximately 44% annual growth
+    const seasonalFactor = 0.15; // Amplitude of seasonal variation
+    const marketCyclePeriod = 180; // Days for a full market cycle
     
     for (let i = days; i >= 0; i--) {
       const date = new Date();
       date.setDate(today.getDate() - i);
       
-      // Combine multiple factors for realistic price movement
-      const trend = Math.sin(i * trendCycle) * 0.3; // Long term trend
-      const seasonality = Math.sin(i * 0.1) * 0.2; // Seasonal pattern
-      const randomWalk = (Math.random() - 0.5) * 2 * volatility; // Random walk
-      const marketSentiment = Math.sin(i * 0.05) * 0.1; // Market sentiment
+      // Deterministic market factors
+      const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+      const yearProgress = dayOfYear / 365;
       
-      // Calculate daily change
-      const change = (trend + seasonality + randomWalk + marketSentiment) * 100;
+      // Long-term growth trend (compound growth)
+      const growthFactor = Math.pow(1 + dailyGrowthRate, days - i);
       
-      // Add occasional market events
-      if (i % 45 === 0) { // Major event every 45 days
-        totalValue *= (1 + (Math.random() > 0.5 ? 0.05 : -0.05)); // ±5% shock
-      }
+      // Seasonal component (higher in Q1 and Q4, lower in Q2 and Q3)
+      const seasonality = Math.sin(yearProgress * Math.PI * 2) * seasonalFactor;
       
-      totalValue *= (1 + change / 100);
-      totalValue = Math.max(totalValue, totalValue * 0.2); // Prevent total crash
+      // Market cycle (boom and bust)
+      const marketCycle = Math.cos((days - i) / marketCyclePeriod * Math.PI * 2) * 0.1;
+      
+      // Calculate the day's value using deterministic factors
+      const dayValue = totalValue * growthFactor * (1 + seasonality + marketCycle);
       
       data.push({
         date: date.toISOString().split('T')[0],
-        value: totalValue.toFixed(2)
+        value: dayValue.toFixed(2)
       });
     }
     
@@ -109,23 +109,31 @@ export default function Analytics() {
     }));
   };
 
-  // Generate monthly returns data
+  // Generate stable monthly returns data
   const generateMonthlyReturns = () => {
     const data = [];
     const currentMonth = new Date().getMonth();
     
-    for (let i = 0; i < 12; i++) {
-      const month = new Date(0, i).toLocaleString('default', { month: 'short' });
-      const returnValue = (Math.random() * 20) - 5; // Random between -5% and 15%
-      
-      data.push({
-        month,
-        return: returnValue,
-        fill: returnValue >= 0 ? '#22c55e' : '#ef4444'
-      });
-    }
+    // Fixed monthly returns pattern based on typical market seasonality
+    const monthlyReturns = [
+      { month: 'Jan', return: 3.7 },   // January effect
+      { month: 'Feb', return: 1.5 },
+      { month: 'Mar', return: 2.2 },
+      { month: 'Apr', return: 2.8 },   // Spring rally
+      { month: 'May', return: -0.5 },  // "Sell in May and go away"
+      { month: 'Jun', return: -1.2 },  // Summer lull
+      { month: 'Jul', return: 1.0 },
+      { month: 'Aug', return: -1.8 },
+      { month: 'Sep', return: -2.5 },  // September effect (worst month)
+      { month: 'Oct', return: 1.8 },   // October bounce
+      { month: 'Nov', return: 2.9 },   // Year-end rally begins
+      { month: 'Dec', return: 3.2 },   // Santa Claus rally
+    ];
     
-    return data;
+    return monthlyReturns.map(item => ({
+      ...item,
+      fill: item.return >= 0 ? '#22c55e' : '#ef4444'
+    }));
   };
 
   // Performance data based on selected time range

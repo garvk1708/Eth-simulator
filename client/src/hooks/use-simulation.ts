@@ -13,6 +13,11 @@ interface SimulationResult {
   upperBound: number;
   lowerBound: number;
   recommendation: string;
+  yieldValue: number;       // Annual yield percentage
+  gasFees: number;          // Estimated gas fees for transactions
+  impermanentLoss: number;  // Estimated impermanent loss percentage
+  liquidityImpact: 'Low' | 'Medium' | 'High'; // Market liquidity assessment
+  breakEvenPoint: number;   // Price at which position breaks even
   simulationData: {
     dates: string[];
     actual: number[];
@@ -147,6 +152,25 @@ export function useSimulation() {
         recommendation = `Your current ${asset} position appears optimal based on simulation data. Consider maintaining current levels.`;
       }
       
+      // Calculate additional simulation factors
+      const currentNetworkGasPrice = asset === "Ethereum" ? 50 : 25; // Gwei
+      const yieldValue = 5 + (Math.random() * 10); // Annual yield between 5-15%
+      const gasFees = currentNetworkGasPrice * (3 + Math.random() * 2); // Base gas cost in USD
+      
+      // Calculate impermanent loss based on price volatility and deviation
+      const priceDeviation = Math.abs(priceDifference) / 100;
+      const impermanentLoss = (2 * Math.sqrt(priceDeviation + 1) / (priceDeviation + 1)) - 1;
+      const impermanentLossPercentage = Math.abs(impermanentLoss * 100);
+      
+      // Assess market liquidity based on trading volume and volatility
+      const volumeScore = Math.random(); // Simulated volume score between 0-1
+      const liquidityImpact = volumeScore < 0.3 ? 'High' : volumeScore < 0.7 ? 'Medium' : 'Low';
+      
+      // Calculate break-even point based on entry price and transaction costs
+      const entryPrice = lastActualPrice;
+      const transactionCostPercentage = 0.3; // 0.3% total transaction costs
+      const breakEvenPoint = entryPrice * (1 + transactionCostPercentage / 100);
+
       // Construct simulation result
       const simulationResult: SimulationResult = {
         asset,
@@ -156,6 +180,11 @@ export function useSimulation() {
         upperBound: parseFloat(upperBounds[upperBounds.length - 1].toFixed(2)),
         lowerBound: parseFloat(lowerBounds[lowerBounds.length - 1].toFixed(2)),
         recommendation,
+        yieldValue: parseFloat(yieldValue.toFixed(2)),
+        gasFees: parseFloat(gasFees.toFixed(2)),
+        impermanentLoss: parseFloat(impermanentLossPercentage.toFixed(2)),
+        liquidityImpact: liquidityImpact as 'Low' | 'Medium' | 'High',
+        breakEvenPoint: parseFloat(breakEvenPoint.toFixed(2)),
         simulationData: {
           dates: [...dates, ...futureDates],
           actual: [...historicalPrices, ...Array(futureDays).fill(null)],
@@ -176,6 +205,11 @@ export function useSimulation() {
         upperBound: simulationResult.upperBound,
         lowerBound: simulationResult.lowerBound,
         recommendation,
+        yieldValue: simulationResult.yieldValue,
+        gasFees: simulationResult.gasFees,
+        impermanentLoss: simulationResult.impermanentLoss,
+        liquidityImpact: simulationResult.liquidityImpact,
+        breakEvenPoint: simulationResult.breakEvenPoint,
         simulationData: simulationResult.simulationData
       });
       

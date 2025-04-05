@@ -99,6 +99,11 @@ export const simulations = pgTable("simulations", {
   upperBound: numeric("upper_bound"),
   lowerBound: numeric("lower_bound"),
   recommendation: text("recommendation"),
+  yieldValue: numeric("yield_value"),         // Annual yield percentage
+  gasFees: numeric("gas_fees"),               // Estimated gas fees for transactions
+  impermanentLoss: numeric("impermanent_loss"), // Estimated impermanent loss percentage
+  liquidityImpact: text("liquidity_impact"),  // Market liquidity assessment
+  breakEvenPoint: numeric("break_even_point"), // Price at which position breaks even
   simulationData: jsonb("simulation_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -113,6 +118,11 @@ export const insertSimulationSchema = createInsertSchema(simulations).pick({
   upperBound: true,
   lowerBound: true,
   recommendation: true,
+  yieldValue: true,
+  gasFees: true,
+  impermanentLoss: true,
+  liquidityImpact: true,
+  breakEvenPoint: true,
   simulationData: true,
 });
 
