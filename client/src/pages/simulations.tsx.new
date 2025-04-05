@@ -23,7 +23,7 @@ import {
   Check,
   X,
   CopyIcon,
-  GitCompare,
+  LucideGitCompare,
   Layers
 } from 'lucide-react';
 import { 
@@ -179,7 +179,7 @@ export default function Simulations() {
       <Card className="bg-card border-secondary mb-6">
         <CardHeader className="bg-secondary-dark">
           <CardTitle className="flex items-center">
-            <GitCompare className="mr-2" size={20} />
+            <LucideGitCompare className="mr-2" size={20} />
             Protocol Transaction Simulator
           </CardTitle>
           <CardDescription>
@@ -367,7 +367,7 @@ export default function Simulations() {
               disabled={simulationInProgress}
               className="flex-1"
             >
-              <GitCompare size={16} className="mr-2" />
+              <LucideGitCompare size={16} className="mr-2" />
               Compare All Protocols
             </Button>
             
