@@ -52,7 +52,7 @@ export default function Analytics() {
   const generatePerformanceData = () => {
     const data = [];
     const today = new Date();
-    let totalValue = 10000; // Starting value
+    let totalValue = 50000; // Starting value
     
     // Generate data points depending on the time range
     let days;
@@ -65,13 +65,30 @@ export default function Analytics() {
       default: days = 30;
     }
     
+    // Market cycles and trends
+    const trendCycle = Math.PI * 2 / days; // Complete cycle over the period
+    const volatility = timeRange === '1W' ? 0.015 : 0.008; // Higher volatility for shorter timeframes
+    
     for (let i = days; i >= 0; i--) {
       const date = new Date();
       date.setDate(today.getDate() - i);
       
-      // Random daily change with some trend
-      const change = (Math.random() * 6) - 2 + (i % 7 === 0 ? 5 : 0); // extra bump every 7 days
-      totalValue = totalValue * (1 + change / 100);
+      // Combine multiple factors for realistic price movement
+      const trend = Math.sin(i * trendCycle) * 0.3; // Long term trend
+      const seasonality = Math.sin(i * 0.1) * 0.2; // Seasonal pattern
+      const randomWalk = (Math.random() - 0.5) * 2 * volatility; // Random walk
+      const marketSentiment = Math.sin(i * 0.05) * 0.1; // Market sentiment
+      
+      // Calculate daily change
+      const change = (trend + seasonality + randomWalk + marketSentiment) * 100;
+      
+      // Add occasional market events
+      if (i % 45 === 0) { // Major event every 45 days
+        totalValue *= (1 + (Math.random() > 0.5 ? 0.05 : -0.05)); // ±5% shock
+      }
+      
+      totalValue *= (1 + change / 100);
+      totalValue = Math.max(totalValue, totalValue * 0.2); // Prevent total crash
       
       data.push({
         date: date.toISOString().split('T')[0],
