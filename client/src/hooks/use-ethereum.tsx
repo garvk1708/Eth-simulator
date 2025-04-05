@@ -135,7 +135,23 @@ export function EthereumProvider({ children }: { children: ReactNode }) {
     }
   }, [updateUserData, toast]);
 
-  const disconnectWallet = useCallback(() => {
+  const disconnectWallet = useCallback(async () => {
+    if (window.ethereum) {
+      try {
+        // Clear MetaMask connection
+        await window.ethereum.request({
+          method: 'wallet_requestPermissions',
+          params: [{ eth_accounts: {} }]
+        });
+        await window.ethereum.request({
+          method: 'eth_requestAccounts',
+          params: [[]],
+        });
+      } catch (error) {
+        console.error('Error disconnecting wallet:', error);
+      }
+    }
+    
     setProvider(null);
     setSigner(null);
     setAddress(null);
