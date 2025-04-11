@@ -56,17 +56,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // On Replit, the server needs to use the PORT environment variable if it's set
-  // This is crucial for proper connectivity in the Replit environment
-  const port = process.env.PORT || 5000;
-  
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  const port = process.env.PORT || 4000;
+
+  server.listen(port, () => {
     log(`serving on port ${port}`);
     log(`process.env.PORT is: ${process.env.PORT || 'not set'}`);
-    log(`serving application at http://0.0.0.0:${port}`);
+    log(`serving application at http://localhost:${port}`);
   });
 })();
